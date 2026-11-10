@@ -363,7 +363,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     }
     return { x:u, y:v };
   }
-  const editorMap = (u, v) => ({ x:u, y:v });
+  const editorMap = (u, v) => previewMap(u, v); // strokes in the neighbor margin land where that neighbor's pixels live
 
   /* ---------- rendering ---------- */
   let raf = 0;
@@ -377,8 +377,13 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     const { m, view } = editorGeom(), sc = W / view;
     ectx.setTransform(1,0,0,1,0,0); ectx.clearRect(0,0,W,W);
     ectx.imageSmoothingEnabled = sc < 1;
-    const rng = st.neighbors ? [-1,0,1] : [0];
-    for (const dx of rng) for (const dy of rng) ectx.drawImage(tile, (m + dx*N)*sc, (m + dy*N)*sc, N*sc, N*sc);
+    if (m){
+      // Neighbors follow the selected repeat: tile the repeat unit, anchored so its plain tile sits in the middle.
+      ectx.setTransform(sc,0,0,sc,m*sc,m*sc);
+      ectx.fillStyle = ectx.createPattern(superC, 'repeat');
+      ectx.fillRect(-m,-m,view,view);
+      ectx.setTransform(1,0,0,1,0,0);
+    } else ectx.drawImage(tile, 0, 0, N*sc, N*sc);
     const a = Math.round(m*sc), b = Math.round((m+N)*sc);
     if (m){
       ectx.fillStyle = 'rgba(14,22,18,.52)';

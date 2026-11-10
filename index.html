@@ -168,7 +168,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
         <span class="label">Yours</span>
         <div class="swatches" id="custom" aria-label="Your colors"></div>
       </div>
-      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background. Opacity applies to the brush color. Colors you choose with the pickers, along with their opacity, are kept under Yours; right-click or long-press one to remove it.</p>
+      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background. Opacity applies to the brush color, and adjusting it updates the selected color under Yours. Colors you choose with the pickers are kept under Yours; right-click or long-press one to remove it.</p>
 
       <div class="divider"></div>
 
@@ -749,8 +749,23 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   $('#bg').addEventListener('input', (e) => { st.bg = e.target.value; saveSoon(); });
   // 'change' fires once the picker commits, so dragging through the picker adds one swatch, not dozens.
   $('#fg').addEventListener('change', (e) => addCustom(e.target.value, st.fgA));
-  $('#alpha').addEventListener('input', (e) => { st.fgA = clamp(+e.target.value/100, .01, 1); syncUI(); saveSoon(); });
-  $('#alpha').addEventListener('change', () => { if (st.fgA < 1) addCustom(st.fg, st.fgA); });
+  // The slider edits the opacity of the selected color. If that color is one of Yours, its swatch is
+  // updated in place rather than a new one being added for every adjustment.
+  let alphaFrom = null;
+  $('#alpha').addEventListener('input', (e) => {
+    if (alphaFrom === null) alphaFrom = keyOf(st.fg, st.fgA);
+    st.fgA = clamp(+e.target.value/100, .01, 1); syncUI(); saveSoon();
+  });
+  $('#alpha').addEventListener('change', () => {
+    const from = alphaFrom, to = keyOf(st.fg, st.fgA); alphaFrom = null;
+    if (from === null || from === to) return;
+    if (custom.includes(from)){
+      custom = custom.filter(h => h !== to);
+      custom[custom.indexOf(from)] = to;
+      if (PALETTE.some(([h]) => h === to)) custom = custom.filter(h => h !== to);
+      saveCustom();
+    } else if (st.fgA < 1) addCustom(st.fg, st.fgA);
+  });
   $('#bg').addEventListener('change', (e) => addCustom(e.target.value));
   $('#swap').addEventListener('click', () => { [st.fg, st.bg] = [st.bg, st.fg]; syncUI(); saveSoon(); });
   $('#crisp').addEventListener('change', (e) => { st.crisp = e.target.checked; saveSoon(); });

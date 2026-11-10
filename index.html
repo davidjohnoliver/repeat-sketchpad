@@ -44,7 +44,7 @@ body{background:var(--bg);color:var(--fg);font:400 14px/1.45 var(--f-body)}
 .top h1{font:700 22px/1.1 var(--f-display);letter-spacing:-.01em;margin:0;text-wrap:balance}
 .top p{margin:0;color:var(--muted);max-width:68ch}
 
-.work{flex:1;display:grid;grid-template-columns:minmax(280px,430px) minmax(0,1fr);gap:16px;align-items:stretch}
+.work{flex:1;display:grid;grid-template-columns:minmax(280px,460px) minmax(0,1fr);gap:16px;align-items:stretch}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
 
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
@@ -63,7 +63,8 @@ body{background:var(--bg);color:var(--fg);font:400 14px/1.45 var(--f-body)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
 .seg .btn{border:0;border-radius:0;border-right:1px solid var(--line)}
 .seg .btn:last-child{border-right:0}
-.seg .btn kbd{font:500 10px var(--f-mono);opacity:.6}
+[data-tool]{padding-inline:8px}
+#shapeDim{margin-left:auto;color:var(--muted)}
 
 .mat{background-color:var(--mat);
   background-image:linear-gradient(var(--mat-line) 1px,transparent 1px),linear-gradient(90deg,var(--mat-line) 1px,transparent 1px);
@@ -101,7 +102,8 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   .work{grid-template-columns:1fr}
   .preview-panel .preview-wrap{flex:none;height:min(92vw,560px);min-height:0}
 }
-@media (max-width:480px){ .ex-grid{grid-template-columns:1fr} .seg .btn kbd{display:none} }
+@media (max-width:480px){ .ex-grid{grid-template-columns:1fr} [data-tool]:not([aria-pressed="true"]) .lbl{display:none} }
+@media (max-width:340px){ [data-tool] .lbl{display:none} }
 @media (prefers-reduced-motion:reduce){ .btn{transition:none} }
 </style>
 </head>
@@ -110,17 +112,18 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
 <div class="app">
   <header class="top">
     <h1>Repeat Sketchpad</h1>
-    <p>Draw in the tile and watch the repeat update. Strokes that cross an edge wrap to the opposite side, so the pattern stays seamless. You can paint on the repeat directly too.</p>
+    <p>Draw in the tile and watch the repeat update. Strokes and shapes that cross an edge wrap to the opposite side, so the pattern stays seamless. You can paint on the repeat directly too.</p>
   </header>
 
   <main class="work">
     <section class="panel editor-panel" aria-label="Tile editor">
       <div class="row between">
         <div class="seg" role="toolbar" aria-label="Tools">
-          <button class="btn" data-tool="brush" title="Brush (B)"><svg viewBox="0 0 16 16"><path d="M3 13l.8-3.2L11 2.6l2.4 2.4-7.2 7.2z"/><path d="M9.6 4l2.4 2.4"/></svg>Brush <kbd>B</kbd></button>
-          <button class="btn" data-tool="eraser" title="Eraser paints the background color (E)"><svg viewBox="0 0 16 16"><path d="M7 13.5h6.5"/><path d="M3.4 9.6l5.3-5.3a1.4 1.4 0 012 0l2 2a1.4 1.4 0 010 2L8.2 12.8H5.8z"/></svg>Erase <kbd>E</kbd></button>
-          <button class="btn" data-tool="fill" title="Fill, wraps across edges (F)"><svg viewBox="0 0 16 16"><path d="M2.5 8.2L7.6 3l5 5-5.1 5.2z"/><path d="M2.6 8.2h10"/><path d="M14 10.6s1 1.3 1 2a1 1 0 01-2 0c0-.7 1-2 1-2z"/></svg>Fill <kbd>F</kbd></button>
-          <button class="btn" data-tool="pick" title="Pick a color from the tile (I, or hold Alt)"><svg viewBox="0 0 16 16"><path d="M10.5 2.5l3 3"/><path d="M9.2 3.8l3 3L6 13H3v-3z"/></svg>Pick <kbd>I</kbd></button>
+          <button class="btn" data-tool="brush" title="Brush (B)" aria-label="Brush"><svg viewBox="0 0 16 16"><path d="M3 13l.8-3.2L11 2.6l2.4 2.4-7.2 7.2z"/><path d="M9.6 4l2.4 2.4"/></svg><span class="lbl">Brush</span></button>
+          <button class="btn" data-tool="eraser" title="Eraser paints the background color (E)" aria-label="Erase"><svg viewBox="0 0 16 16"><path d="M7 13.5h6.5"/><path d="M3.4 9.6l5.3-5.3a1.4 1.4 0 012 0l2 2a1.4 1.4 0 010 2L8.2 12.8H5.8z"/></svg><span class="lbl">Erase</span></button>
+          <button class="btn" data-tool="fill" title="Fill, wraps across edges (F)" aria-label="Fill"><svg viewBox="0 0 16 16"><path d="M2.5 8.2L7.6 3l5 5-5.1 5.2z"/><path d="M2.6 8.2h10"/><path d="M14 10.6s1 1.3 1 2a1 1 0 01-2 0c0-.7 1-2 1-2z"/></svg><span class="lbl">Fill</span></button>
+          <button class="btn" data-tool="pick" title="Pick a color from the tile (I, or hold Alt)" aria-label="Pick"><svg viewBox="0 0 16 16"><path d="M10.5 2.5l3 3"/><path d="M9.2 3.8l3 3L6 13H3v-3z"/></svg><span class="lbl">Pick</span></button>
+          <button class="btn" data-tool="shape" title="Shapes: line, rectangle, ellipse (U)" aria-label="Shape"><svg viewBox="0 0 16 16" id="shapeIcon"></svg><span class="lbl">Shape</span></button>
         </div>
         <div class="row" style="gap:6px">
           <button class="btn icon" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.5 6.5h7a3.5 3.5 0 010 7h-2"/></svg></button>
@@ -129,6 +132,18 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       </div>
 
       <div class="mat"><canvas id="editor" aria-label="Tile drawing area"></canvas></div>
+
+      <div class="row" id="shapeRow" hidden>
+        <span class="label">Shape</span>
+        <div class="seg" role="toolbar" aria-label="Shape">
+          <button class="btn icon" data-shape="line" title="Line" aria-label="Line"><svg viewBox="0 0 16 16"></svg></button>
+          <button class="btn icon" data-shape="rect" title="Rectangle" aria-label="Rectangle"><svg viewBox="0 0 16 16"></svg></button>
+          <button class="btn icon" data-shape="ellipse" title="Ellipse" aria-label="Ellipse"><svg viewBox="0 0 16 16"></svg></button>
+        </div>
+        <label class="check" title="Fill the shape instead of drawing its outline. Size sets the outline width."><input type="checkbox" id="shapeFill">Filled</label>
+        <label class="check" title="Squares, circles and lines at 45° steps. Holding Shift while dragging does the same."><input type="checkbox" id="constrain">Constrain</label>
+        <span class="mono" id="shapeDim" aria-live="off"></span>
+      </div>
 
       <div class="row">
         <span class="label">Size</span>
@@ -242,13 +257,14 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     ['#b23a2e','Madder red'],['#e7a1a8','Rose'],['#f2ead8','Cream'],['#ffffff','White'],['#2b2b2b','Charcoal']
   ];
 
-  const st = { tool:'brush', size:6, fg:'#2e4a7d', fgA:1, bg:'#f2ead8', mode:'grid', tilePx:128, seams:false, neighbors:true, crisp:false };
+  const st = { tool:'brush', size:6, fg:'#2e4a7d', fgA:1, bg:'#f2ead8', mode:'grid', tilePx:128, seams:false, neighbors:true, crisp:false, shape:'rect', shapeFill:false, constrain:false };
   try { Object.assign(st, JSON.parse(store.get('rs.settings') || '{}')); } catch(e){}
   st.size = clamp(+st.size || 6, 1, 64);
   st.fgA = clamp(+st.fgA || 1, .01, 1);
   st.tilePx = clamp(+st.tilePx || 128, 16, 512);
   if (!['grid','brick','halfdrop','mirror'].includes(st.mode)) st.mode = 'grid';
-  if (!['brush','eraser','fill','pick'].includes(st.tool)) st.tool = 'brush';
+  if (!['brush','eraser','fill','pick','shape'].includes(st.tool)) st.tool = 'brush';
+  if (!['line','rect','ellipse'].includes(st.shape)) st.shape = 'rect';
 
   let N = 128, tile, tctx;
   function setTileCanvas(c){ tile = c; tctx = c.getContext('2d', { willReadFrequently:true }); N = c.width; $('#res').value = String(N); }
@@ -262,18 +278,18 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   /* ---------- undo ---------- */
   const undoStack = [], redoStack = [];
   const snapshot = () => ({ n:N, data:tctx.getImageData(0,0,N,N) });
-  function pushUndo(){ undoStack.push(snapshot()); if (undoStack.length > 60) undoStack.shift(); redoStack.length = 0; syncUndo(); }
+  function pushUndo(s = snapshot()){ undoStack.push(s); if (undoStack.length > 60) undoStack.shift(); redoStack.length = 0; syncUndo(); }
   function restore(s){ if (s.n !== N) setTileCanvas(mk(s.n)); tctx.putImageData(s.data,0,0); changed(); }
-  function undo(){ if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); syncUndo(); }
-  function redo(){ if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); syncUndo(); }
+  function undo(){ if (drawing || !undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); syncUndo(); }
+  function redo(){ if (drawing || !redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); syncUndo(); }
   function syncUndo(){ $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length; }
 
   /* ---------- painting ---------- */
   // A translucent stroke is painted opaque on its own layer and laid over the tile as a whole,
   // so overlapping stamps within one stroke don't build up.
   let stroke = null;
-  function beginStroke(alpha){
-    if (alpha >= 1){ stroke = null; return; }
+  function beginStroke(alpha, force){
+    if (alpha >= 1 && !force){ stroke = null; return; }
     const base = mk(N), layer = mk(N);
     base.getContext('2d').drawImage(tile, 0, 0);
     stroke = { base, layer, ctx: layer.getContext('2d'), alpha };
@@ -328,6 +344,122 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     }
     composeStroke();
   }
+  /* ---------- shapes ---------- */
+  // A shape is dragged out corner to corner in surface space (the editor or the repeat) and redrawn on the
+  // stroke layer on every move, so the tile and the repeat show it live. It becomes pixels on release.
+  const SHAPE_ICONS = {
+    line:'<path d="M3 13L13 3"/>',
+    rect:'<rect x="2.5" y="3.5" width="11" height="9" rx=".5"/>',
+    ellipse:'<ellipse cx="8" cy="8" rx="5.5" ry="4.5"/>'
+  };
+  // Calls draw() once for every repeat cell the box touches, with the layer transformed so that cell lands
+  // on the tile. Whatever falls outside the cell falls outside the canvas, so each cell keeps only its own part.
+  function eachCell(g, x0, y0, x1, y1, draw){
+    const fl = Math.floor, h = N/2, m = st.mode;
+    if (m === 'brick'){
+      for (let r = fl(y0/N); r <= fl(y1/N); r++){ const off = r & 1 ? h : 0;
+        for (let c = fl((x0-off)/N); c <= fl((x1-off)/N); c++){ g.setTransform(1,0,0,1,-(c*N+off),-r*N); draw(r*N, (r+1)*N); } }
+    } else if (m === 'halfdrop'){
+      for (let c = fl(x0/N); c <= fl(x1/N); c++){ const off = c & 1 ? h : 0;
+        for (let r = fl((y0-off)/N); r <= fl((y1-off)/N); r++){ g.setTransform(1,0,0,1,-c*N,-(r*N+off)); draw(r*N+off, (r+1)*N+off); } }
+    } else {
+      const mir = m === 'mirror';
+      for (let r = fl(y0/N); r <= fl(y1/N); r++) for (let c = fl(x0/N); c <= fl(x1/N); c++){
+        const fx = mir && (c & 1), fy = mir && (r & 1);
+        g.setTransform(fx ? -1 : 1, 0, 0, fy ? -1 : 1, fx ? (c+1)*N : -c*N, fy ? (r+1)*N : -r*N);
+        draw(r*N, (r+1)*N);
+      }
+    }
+    g.setTransform(1,0,0,1,0,0);
+  }
+  // Redraws the shape being dragged. Returns false when there is nothing to draw yet.
+  function drawShape(d){
+    if (!stroke || stroke.base.width !== N) return false;
+    const g = stroke.ctx, s = st.size, kind = st.shape, con = st.constrain || d.shift, crisp = st.crisp;
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,N,N);
+    g.fillStyle = g.strokeStyle = st.fg;
+    let drew = true, dim = '';
+    if (kind === 'line'){
+      let ax = d.a.u, ay = d.a.v, bx = d.b.u, by = d.b.v;
+      if (crisp){ ax = Math.floor(ax); ay = Math.floor(ay); bx = Math.floor(bx); by = Math.floor(by); }
+      if (con){
+        const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+        const k = mod(Math.round(Math.atan2(dy, dx) / (Math.PI/4)), 8);
+        const ux = [1,1,0,-1,-1,-1,0,1][k], uy = [0,1,1,1,0,-1,-1,-1][k];
+        let n = ux && uy ? len / Math.SQRT2 : len; if (crisp) n = Math.round(n);
+        bx = ax + ux*n; by = ay + uy*n;
+      }
+      dim = Math.round(Math.hypot(bx - ax, by - ay)) + (crisp ? 1 : 0) + ' px';
+      if (crisp){
+        // Step pixel to pixel so thin lines come out clean, stamping the brush dot through the repeat.
+        let x = ax, y = ay; const dx = Math.abs(bx - ax), dy = -Math.abs(by - ay), sx = ax < bx ? 1 : -1, sy = ay < by ? 1 : -1;
+        let err = dx + dy;
+        for (;;){
+          const p = d.map(x + .5, y + .5); stampAt(p.x, p.y, st.fg);
+          if (x === bx && y === by) break;
+          const e2 = 2*err; if (e2 >= dy){ err += dy; x += sx; } if (e2 <= dx){ err += dx; y += sy; }
+        }
+      } else {
+        const pad = s/2 + 1;
+        eachCell(g, Math.min(ax,bx) - pad, Math.min(ay,by) - pad, Math.max(ax,bx) + pad, Math.max(ay,by) + pad, () => {
+          g.beginPath();
+          if (Math.hypot(bx - ax, by - ay) < .01){ g.arc(ax, ay, Math.max(s/2, .5), 0, Math.PI*2); g.fill(); return; }
+          g.lineWidth = s; g.lineCap = 'round'; g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+        });
+      }
+    } else {
+      // Corners snap to whole pixels, so rectangle edges stay sharp and the outline sits inside the dragged box.
+      const q = crisp ? Math.floor : Math.round;
+      let ax = q(d.a.u), ay = q(d.a.v), bx = q(d.b.u), by = q(d.b.v);
+      if (con){ const dx = bx - ax, dy = by - ay, n = Math.max(Math.abs(dx), Math.abs(dy)); bx = ax + (dx < 0 ? -n : n); by = ay + (dy < 0 ? -n : n); }
+      const e = crisp ? 1 : 0; // in hard-pixel mode the pixel under each corner is part of the shape
+      const x0 = Math.min(ax,bx), y0 = Math.min(ay,by), x1 = Math.max(ax,bx) + e, y1 = Math.max(ay,by) + e;
+      const w = x1 - x0, h = y1 - y0;
+      dim = w + ' × ' + h;
+      drew = w > 0 && h > 0;
+      if (drew && kind === 'rect'){
+        const solid = st.shapeFill || w <= 2*s || h <= 2*s;
+        eachCell(g, x0, y0, x1, y1, () => {
+          if (solid){ g.fillRect(x0, y0, w, h); return; }
+          g.fillRect(x0, y0, w, s); g.fillRect(x0, y1 - s, w, s);
+          g.fillRect(x0, y0 + s, s, h - 2*s); g.fillRect(x1 - s, y0 + s, s, h - 2*s);
+        });
+      } else if (drew){
+        const cx = (x0 + x1)/2, cy = (y0 + y1)/2, rx = w/2, ry = h/2, rxi = rx - s, ryi = ry - s;
+        const solid = st.shapeFill || rxi <= 0 || ryi <= 0;
+        eachCell(g, x0, y0, x1, y1, (cy0, cy1) => {
+          if (!crisp){
+            g.beginPath();
+            if (solid){ g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); g.fill(); }
+            else { g.lineWidth = s; g.ellipse(cx, cy, rx - s/2, ry - s/2, 0, 0, Math.PI*2); g.stroke(); }
+            return;
+          }
+          // Hard pixels: one span per row, or two with the inside left open.
+          for (let y = Math.max(y0, cy0); y < Math.min(y1, cy1); y++){
+            const t = (y + .5 - cy)/ry, hw = rx*Math.sqrt(Math.max(0, 1 - t*t));
+            const xa = Math.round(cx - hw), xb = Math.max(Math.round(cx + hw), xa + 1);
+            const ti = solid ? 2 : (y + .5 - cy)/ryi;
+            if (Math.abs(ti) >= 1){ g.fillRect(xa, y, xb - xa, 1); continue; }
+            const hwi = rxi*Math.sqrt(1 - ti*ti), ia = Math.round(cx - hwi), ib = Math.round(cx + hwi);
+            if (ib <= ia){ g.fillRect(xa, y, xb - xa, 1); continue; }
+            g.fillRect(xa, y, ia - xa, 1); g.fillRect(ib, y, xb - ib, 1);
+          }
+        });
+      }
+    }
+    composeStroke();
+    d.drew = drew; d.dirty = false;
+    $('#shapeDim').textContent = dim;
+    return drew;
+  }
+  function endShape(commit){
+    const d = drawing; if (!d || !d.shape) return;
+    if (commit) drawShape(d); else if (stroke){ stroke.ctx.setTransform(1,0,0,1,0,0); stroke.ctx.clearRect(0,0,N,N); composeStroke(); }
+    if (commit && d.drew) pushUndo(d.snap);
+    drawing = null; stroke = null; $('#shapeDim').textContent = '';
+    changed();
+  }
+
   const hexRgb = (h) => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
   const rgbHex = (r,g,b) => '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
   // A color key is '#rrggbb', or '#rrggbbaa' when translucent.
@@ -421,7 +553,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   /* ---------- rendering ---------- */
   let raf = 0;
   function requestRender(){ if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); }
-  function render(){ buildSuper(); renderEditor(); renderPreview(); }
+  function render(){ if (drawing && drawing.shape && drawing.dirty) drawShape(drawing); buildSuper(); renderEditor(); renderPreview(); }
 
   function editorGeom(){ const m = st.neighbors ? N*.25 : 0; return { m, view: N + 2*m }; }
   function renderEditor(){
@@ -512,6 +644,11 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       const tool = e.altKey ? 'pick' : st.tool;
       if (tool === 'pick'){ pickAt(t.x, t.y); return; }
       if (tool === 'fill'){ pushUndo(); floodFill(t.x, t.y, st.fg, st.fgA); changed(); return; }
+      if (tool === 'shape'){
+        drawing = { surface, map, shape:true, a:p, b:p, shift:e.shiftKey, snap:snapshot(), dirty:true };
+        beginStroke(st.fgA, true);
+        requestRender(); return;
+      }
       pushUndo();
       drawing = { surface, last:p, color: tool === 'eraser' ? st.bg : st.fg, map };
       beginStroke(tool === 'eraser' ? 1 : st.fgA);
@@ -521,13 +658,19 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     el.addEventListener('pointermove', (e) => {
       const p = pointFor(surface, e);
       hover = { surface, u:p.u, v:p.v, alt:e.altKey };
-      if (drawing && drawing.surface === surface){
+      if (drawing && drawing.shape){
+        if (drawing.surface === surface){ drawing.b = p; drawing.shift = e.shiftKey; drawing.dirty = true; }
+      } else if (drawing && drawing.surface === surface){
         const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
         for (const ev of (evs.length ? evs : [e])){ const q = pointFor(surface, ev); strokeSeg(drawing.last, q, map, drawing.color); drawing.last = q; }
       }
       requestRender();
     });
-    const end = () => { if (drawing){ drawing = null; stroke = null; changed(); } };
+    const end = (e) => {
+      if (!drawing) return;
+      if (drawing.shape){ endShape(e.type === 'pointerup'); return; }
+      drawing = null; stroke = null; changed();
+    };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
     el.addEventListener('pointerleave', () => { if (!drawing){ hover = null; requestRender(); } });
@@ -590,7 +733,14 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     $('#crisp').checked = st.crisp; $('#neighbors').checked = st.neighbors; $('#seams').checked = st.seams;
     $('#res').value = String(N);
     editor.style.cursor = st.tool === 'pick' || st.tool === 'fill' ? 'cell' : 'crosshair';
+    $$('[data-shape]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shape === st.shape)));
+    $('#shapeIcon').innerHTML = SHAPE_ICONS[st.shape];
+    $('#shapeFill').checked = st.shapeFill; $('#constrain').checked = st.constrain;
+    $('#shapeRow').hidden = st.tool !== 'shape';
   }
+  $$('[data-shape]').forEach(b => { b.firstElementChild.innerHTML = SHAPE_ICONS[b.dataset.shape]; b.addEventListener('click', () => { st.shape = b.dataset.shape; syncUI(); saveSoon(); }); });
+  $('#shapeFill').addEventListener('change', (e) => { st.shapeFill = e.target.checked; saveSoon(); });
+  $('#constrain').addEventListener('change', (e) => { st.constrain = e.target.checked; saveSoon(); });
   $$('[data-tool]').forEach(b => b.addEventListener('click', () => { st.tool = b.dataset.tool; syncUI(); saveSoon(); }));
   $$('[data-mode]').forEach(b => b.addEventListener('click', () => { st.mode = b.dataset.mode; syncUI(); changed(); }));
   $('#size').addEventListener('input', (e) => { st.size = +e.target.value; syncUI(); requestRender(); saveSoon(); });
@@ -665,12 +815,13 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   /* ---------- keyboard ---------- */
   document.addEventListener('keydown', (e) => {
     if (!modal.hidden){ if (e.key === 'Escape'){ modal.hidden = true; } return; }
+    if (drawing && drawing.shape && e.key === 'Escape'){ endShape(false); return; }
     if (e.target.closest('input, select, textarea')) return;
     const k = e.key.toLowerCase(), mod1 = e.ctrlKey || e.metaKey;
     if (mod1 && k === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod1 && k === 'y'){ e.preventDefault(); redo(); return; }
     if (mod1) return;
-    const tools = { b:'brush', e:'eraser', f:'fill', i:'pick' };
+    const tools = { b:'brush', e:'eraser', f:'fill', i:'pick', u:'shape' };
     if (tools[k]){ st.tool = tools[k]; syncUI(); saveSoon(); return; }
     if (k === '[' || k === ']'){ const step = st.size >= 12 ? 2 : 1; st.size = clamp(st.size + (k === ']' ? step : -step), 1, 64); syncUI(); requestRender(); saveSoon(); return; }
     if (k === 'x'){ [st.fg, st.bg] = [st.bg, st.fg]; syncUI(); saveSoon(); return; }
@@ -678,6 +829,10 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     if (arrows[k]){ e.preventDefault(); pushUndo(); roll(...arrows[k]); }
   });
   document.addEventListener('keyup', (e) => { if (e.key === 'Alt' && hover){ hover.alt = false; requestRender(); } });
+  // Shift pressed or released mid-drag re-constrains the shape without waiting for the pointer to move.
+  for (const t of ['keydown','keyup']) document.addEventListener(t, (e) => {
+    if (e.key === 'Shift' && drawing && drawing.shape){ drawing.shift = e.shiftKey; drawing.dirty = true; requestRender(); }
+  });
 
   /* ---------- sizing ---------- */
   const pwrap = preview.parentElement;

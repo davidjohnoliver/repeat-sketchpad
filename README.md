@@ -11,6 +11,7 @@ Most tiling tools have you upload an image, look at the result, then go back to 
 - **Repeat types:** grid, brick, half-drop and mirror. "Show tile edges" outlines each tile in the preview.
 - **Seam checking:** "Offset ½" moves the tile by half its width and height so the edges land in the middle. The arrow keys move it by 1 px.
 - **Tools:** brush, eraser, fill (the fill also wraps across edges), colour picker, and a hard-pixel mode for pixel art. The tile can be 16 to 512 px square.
+- **Shapes:** drag out a line, rectangle or ellipse, outlined or filled, in the tile or on the repeat. Shapes wrap across edges like brush strokes, and "Constrain" gives squares, circles and lines at 45° steps. A shape becomes pixels when you release.
 - **Import and export:** load or paste an image to start from. Export shows the tile and a 3×3 repeat at 1× to 8× scale.
 - Undo and redo, and your tile, settings and custom colours are saved in your browser.
 
@@ -24,7 +25,9 @@ To host it with GitHub Pages, go to **Settings → Pages**, choose **Deploy from
 
 | Key | Action |
 | --- | --- |
-| `B` / `E` / `F` / `I` | Brush / eraser / fill / colour picker |
+| `B` / `E` / `F` / `I` / `U` | Brush / eraser / fill / colour picker / shape |
+| Hold `Shift` while dragging a shape | Constrain it (same as the Constrain checkbox) |
+| `Esc` while dragging a shape | Cancel it |
 | Hold `Alt` | Pick a colour while using another tool |
 | `[` / `]` | Smaller / larger brush |
 | `X` | Swap the brush and background colours |

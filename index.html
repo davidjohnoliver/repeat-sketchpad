@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Repeat Sketchpad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two-pane workbench. The tile sits on a cutting mat at left; the repeat fills the right pane. */
+:root{
+  --bg:#e8ebe6; --surface:#f6f7f3; --fg:#1b221e; --muted:#5a665f; --line:#cdd5ce;
+  --accent:#2f6b57; --accent-fg:#ffffff; --mat:#2f5f4f; --mat-line:rgba(255,255,255,.11); --chip:#e0e6df;
+  --f-display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111613; --surface:#19201c; --fg:#e3e9e5; --muted:#94a199; --line:#2b3530;
+    --accent:#72b59c; --accent-fg:#0c1310; --mat:#1e3a30; --mat-line:rgba(255,255,255,.07); --chip:#222b26;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#19201c; --fg:#e3e9e5; --muted:#94a199; --line:#2b3530;
+  --accent:#72b59c; --accent-fg:#0c1310; --mat:#1e3a30; --mat-line:rgba(255,255,255,.07); --chip:#222b26;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:400 14px/1.45 var(--f-body)}
+*{box-sizing:border-box}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{min-height:100%;display:flex;flex-direction:column;gap:14px;padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
+.top h1{font:700 22px/1.1 var(--f-display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.top p{margin:0;color:var(--muted);max-width:68ch}
+
+.work{flex:1;display:grid;grid-template-columns:minmax(280px,430px) minmax(0,1fr);gap:16px;align-items:stretch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
+
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.row.between{justify-content:space-between}
+.label{font:600 11px/1 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12px}
+
+.btn{font:500 13px/1 var(--f-body);display:inline-flex;align-items:center;gap:6px;padding:8px 10px;
+  border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;cursor:pointer;
+  transition:border-color .12s,background-color .12s}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.icon{padding:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg .btn{border:0;border-radius:0;border-right:1px solid var(--line)}
+.seg .btn:last-child{border-right:0}
+.seg .btn kbd{font:500 10px var(--f-mono);opacity:.6}
+
+.mat{background-color:var(--mat);
+  background-image:linear-gradient(var(--mat-line) 1px,transparent 1px),linear-gradient(90deg,var(--mat-line) 1px,transparent 1px);
+  background-size:16px 16px;background-position:-1px -1px;border-radius:10px;padding:14px}
+#editor{display:block;width:100%;aspect-ratio:1/1;max-width:100%;touch-action:none;cursor:crosshair;border-radius:2px}
+
+input[type=range]{accent-color:var(--accent);flex:1;min-width:100px}
+.color{display:inline-flex;align-items:center;gap:6px}
+input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer}
+.swatches{display:flex;flex-wrap:wrap;gap:5px}
+.sw{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0}
+select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--fg)}
+.check{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.check input{accent-color:var(--accent);width:15px;height:15px;margin:0}
+.divider{height:1px;background:var(--line)}
+.hint{color:var(--muted);font-size:12px}
+.hint kbd{font:500 11px var(--f-mono);background:var(--chip);border-radius:4px;padding:1px 4px}
+
+.preview-panel .preview-wrap{position:relative;flex:1;min-height:420px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+#preview{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;display:block}
+
+.modal{position:fixed;inset:0;background:rgba(10,15,12,.55);display:flex;align-items:center;justify-content:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:16px;width:min(640px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.sheet h2{font:700 18px/1.2 var(--f-display);margin:0}
+.ex-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:14px}
+.ex-grid figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.ex-grid img{width:100%;height:auto;image-rendering:pixelated;border:1px solid var(--line);border-radius:4px;display:block}
+.ex-grid figcaption{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
+#copyStatus{color:var(--fg)}
+
+@media (max-width:820px){
+  .work{grid-template-columns:1fr}
+  .preview-panel .preview-wrap{flex:none;height:min(92vw,560px);min-height:0}
+}
+@media (max-width:480px){ .ex-grid{grid-template-columns:1fr} .seg .btn kbd{display:none} }
+@media (prefers-reduced-motion:reduce){ .btn{transition:none} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <h1>Repeat Sketchpad</h1>
+    <p>Draw in the tile and watch the repeat update. Strokes that cross an edge wrap to the opposite side, so the pattern stays seamless. You can paint on the repeat directly too.</p>
+  </header>
+
+  <main class="work">
+    <section class="panel editor-panel" aria-label="Tile editor">
+      <div class="row between">
+        <div class="seg" role="toolbar" aria-label="Tools">
+          <button class="btn" data-tool="brush" title="Brush (B)"><svg viewBox="0 0 16 16"><path d="M3 13l.8-3.2L11 2.6l2.4 2.4-7.2 7.2z"/><path d="M9.6 4l2.4 2.4"/></svg>Brush <kbd>B</kbd></button>
+          <button class="btn" data-tool="eraser" title="Eraser paints the background color (E)"><svg viewBox="0 0 16 16"><path d="M7 13.5h6.5"/><path d="M3.4 9.6l5.3-5.3a1.4 1.4 0 012 0l2 2a1.4 1.4 0 010 2L8.2 12.8H5.8z"/></svg>Erase <kbd>E</kbd></button>
+          <button class="btn" data-tool="fill" title="Fill, wraps across edges (F)"><svg viewBox="0 0 16 16"><path d="M2.5 8.2L7.6 3l5 5-5.1 5.2z"/><path d="M2.6 8.2h10"/><path d="M14 10.6s1 1.3 1 2a1 1 0 01-2 0c0-.7 1-2 1-2z"/></svg>Fill <kbd>F</kbd></button>
+          <button class="btn" data-tool="pick" title="Pick a color from the tile (I, or hold Alt)"><svg viewBox="0 0 16 16"><path d="M10.5 2.5l3 3"/><path d="M9.2 3.8l3 3L6 13H3v-3z"/></svg>Pick <kbd>I</kbd></button>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="btn icon" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.5 6.5h7a3.5 3.5 0 010 7h-2"/></svg></button>
+          <button class="btn icon" id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.5 6.5h-7a3.5 3.5 0 000 7h2"/></svg></button>
+        </div>
+      </div>
+
+      <div class="mat"><canvas id="editor" aria-label="Tile drawing area"></canvas></div>
+
+      <div class="row">
+        <span class="label">Size</span>
+        <input type="range" id="size" min="1" max="64" step="1" aria-label="Brush size">
+        <span class="mono" id="sizeVal">6 px</span>
+        <label class="check" title="Draw with hard-edged pixels instead of smooth edges"><input type="checkbox" id="crisp">Hard pixels</label>
+      </div>
+
+      <div class="row">
+        <span class="label">Color</span>
+        <span class="color"><input type="color" id="fg" aria-label="Brush color" title="Brush color"></span>
+        <button class="btn icon" id="swap" title="Swap brush and background (X)" aria-label="Swap colors"><svg viewBox="0 0 16 16"><path d="M3 5.5h10M10.5 3l2.5 2.5L10.5 8"/><path d="M13 10.5H3M5.5 8L3 10.5 5.5 13"/></svg></button>
+        <span class="color"><input type="color" id="bg" aria-label="Background color" title="Background color, used by Erase and Clear"></span>
+        <div class="swatches" id="swatches" aria-label="Palette"></div>
+      </div>
+      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background.</p>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <span class="label">Tile</span>
+        <select id="res" aria-label="Tile resolution">
+          <option value="16">16 × 16</option><option value="32">32 × 32</option><option value="64">64 × 64</option>
+          <option value="128">128 × 128</option><option value="256">256 × 256</option><option value="512">512 × 512</option>
+        </select>
+        <label class="check" title="Show the wrapped edges of neighboring tiles around the editor"><input type="checkbox" id="neighbors">Show neighbors</label>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="shift" title="Move the tile by half its width and height to expose the seams">Offset ½</button>
+        <button class="btn" id="clear" title="Fill the tile with the background color">Clear</button>
+        <button class="btn" id="importBtn" title="Load an image into the tile">Import image…</button>
+        <input type="file" id="file" accept="image/*" hidden>
+        <button class="btn" id="exportBtn">Export</button>
+      </div>
+
+      <p class="hint" style="margin:0"><kbd>[</kbd> <kbd>]</kbd> size · <kbd>X</kbd> swap colors · arrow keys nudge the tile 1 px · paste an image to import</p>
+    </section>
+
+    <section class="panel preview-panel" aria-label="Repeat preview">
+      <div class="row between">
+        <div class="seg" role="toolbar" aria-label="Repeat type">
+          <button class="btn" data-mode="grid" title="Straight repeat">Grid</button>
+          <button class="btn" data-mode="brick" title="Each row shifted by half a tile">Brick</button>
+          <button class="btn" data-mode="halfdrop" title="Each column dropped by half a tile">Half-drop</button>
+          <button class="btn" data-mode="mirror" title="Alternate tiles flipped">Mirror</button>
+        </div>
+        <label class="check"><input type="checkbox" id="seams">Show tile edges</label>
+      </div>
+      <div class="preview-wrap"><canvas id="preview" aria-label="Repeated pattern preview"></canvas></div>
+      <div class="row">
+        <span class="label">Zoom</span>
+        <input type="range" id="zoom" min="16" max="512" step="1" aria-label="Preview tile size">
+        <span class="mono" id="zoomVal">128 px</span>
+        <span class="hint">Ctrl + scroll on the preview also zooms</span>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="exportModal" hidden role="dialog" aria-modal="true" aria-labelledby="exTitle">
+  <div class="sheet">
+    <div class="row between">
+      <h2 id="exTitle">Export</h2>
+      <div class="row">
+        <label class="row" style="gap:6px"><span class="label">Scale</span>
+          <select id="exScale"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select>
+        </label>
+        <button class="btn" id="exClose">Close</button>
+      </div>
+    </div>
+    <div class="ex-grid">
+      <figure>
+        <img id="exTile" alt="Your tile">
+        <figcaption><span>Tile</span><span class="mono" id="exTileDim"></span></figcaption>
+        <button class="btn" data-copy="tile">Copy tile</button>
+      </figure>
+      <figure>
+        <img id="exRepeat" alt="Your tile repeated three by three">
+        <figcaption><span>3 × 3 repeat</span><span class="mono" id="exRepDim"></span></figcaption>
+        <button class="btn" data-copy="repeat">Copy repeat</button>
+      </figure>
+    </div>
+    <p class="hint" style="margin:0">Right-click or long-press an image to save it as a PNG. <span id="copyStatus" role="status"></span></p>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const mod = (a, n) => ((a % n) + n) % n;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  };
+  const mk = (w, h = w) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+  const PALETTE = [
+    ['#1f2a44','Ink navy'],['#2e4a7d','Indigo'],['#2a7c7a','Teal'],['#7a9a6b','Sage'],['#d39b2a','Ochre'],
+    ['#b23a2e','Madder red'],['#e7a1a8','Rose'],['#f2ead8','Cream'],['#ffffff','White'],['#2b2b2b','Charcoal']
+  ];
+
+  const st = { tool:'brush', size:6, fg:'#2e4a7d', bg:'#f2ead8', mode:'grid', tilePx:128, seams:false, neighbors:true, crisp:false };
+  try { Object.assign(st, JSON.parse(store.get('rs.settings') || '{}')); } catch(e){}
+  st.size = clamp(+st.size || 6, 1, 64);
+  st.tilePx = clamp(+st.tilePx || 128, 16, 512);
+  if (!['grid','brick','halfdrop','mirror'].includes(st.mode)) st.mode = 'grid';
+  if (!['brush','eraser','fill','pick'].includes(st.tool)) st.tool = 'brush';
+
+  let N = 128, tile, tctx;
+  function setTileCanvas(c){ tile = c; tctx = c.getContext('2d', { willReadFrequently:true }); N = c.width; $('#res').value = String(N); }
+  setTileCanvas(mk(128));
+
+  const editor = $('#editor'), ectx = editor.getContext('2d');
+  const preview = $('#preview'), pctx = preview.getContext('2d');
+  const superC = mk(1); const sctx = superC.getContext('2d');
+  let hover = null;
+
+  /* ---------- undo ---------- */
+  const undoStack = [], redoStack = [];
+  const snapshot = () => ({ n:N, data:tctx.getImageData(0,0,N,N) });
+  function pushUndo(){ undoStack.push(snapshot()); if (undoStack.length > 60) undoStack.shift(); redoStack.length = 0; syncUndo(); }
+  function restore(s){ if (s.n !== N) setTileCanvas(mk(s.n)); tctx.putImageData(s.data,0,0); changed(); }
+  function undo(){ if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); syncUndo(); }
+  function redo(){ if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); syncUndo(); }
+  function syncUndo(){ $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length; }
+
+  /* ---------- painting ---------- */
+  function crispDot(x, y, s){
+    if (s <= 1){ tctx.fillRect(Math.floor(x), Math.floor(y), 1, 1); return; }
+    const odd = s % 2 === 1;
+    const cx = odd ? Math.floor(x) + .5 : Math.round(x);
+    const cy = odd ? Math.floor(y) + .5 : Math.round(y);
+    const r = s / 2, top = Math.round(cy - r);
+    for (let j = 0; j < s; j++){
+      const py = top + j, dy = py + .5 - cy;
+      const h = Math.sqrt(Math.max(0, r*r - dy*dy));
+      const x0 = Math.round(cx - h), x1 = Math.round(cx + h);
+      if (x1 > x0) tctx.fillRect(x0, py, x1 - x0, 1);
+    }
+  }
+  function stampAt(x, y, color){
+    x = mod(x, N); y = mod(y, N);
+    const s = st.size, r = s/2 + 1;
+    tctx.fillStyle = color;
+    for (const ox of [-N,0,N]) for (const oy of [-N,0,N]){
+      const cx = x + ox, cy = y + oy;
+      if (cx + r < 0 || cx - r > N || cy + r < 0 || cy - r > N) continue;
+      if (st.crisp) crispDot(cx, cy, s);
+      else { tctx.beginPath(); tctx.arc(cx, cy, Math.max(s/2, .5), 0, Math.PI*2); tctx.fill(); }
+    }
+  }
+  function strokeSeg(a, b, map, color){
+    const d = Math.hypot(b.u - a.u, b.v - a.v);
+    const step = Math.max(.35, st.size * .2);
+    const n = Math.max(1, Math.ceil(d / step));
+    for (let i = 1; i <= n; i++){
+      const t = i / n, p = map(a.u + (b.u - a.u)*t, a.v + (b.v - a.v)*t);
+      stampAt(p.x, p.y, color);
+    }
+  }
+  const hexRgb = (h) => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
+  const rgbHex = (r,g,b) => '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+
+  function floodFill(x, y, hex){
+    x = Math.floor(mod(x, N)); y = Math.floor(mod(y, N));
+    const img = tctx.getImageData(0,0,N,N), d = img.data;
+    const [r,g,b] = hexRgb(hex);
+    const i0 = (y*N + x)*4, tr = d[i0], tg = d[i0+1], tb = d[i0+2], ta = d[i0+3];
+    if (tr === r && tg === g && tb === b && ta === 255) return;
+    const tol = 60, seen = new Uint8Array(N*N), stack = [y*N + x];
+    seen[y*N + x] = 1;
+    while (stack.length){
+      const p = stack.pop(), i = p*4;
+      d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = 255;
+      const px = p % N, py = (p / N) | 0;
+      const nb = [py*N + (px+1)%N, py*N + (px-1+N)%N, ((py+1)%N)*N + px, ((py-1+N)%N)*N + px];
+      for (const q of nb){
+        if (seen[q]) continue;
+        const j = q*4;
+        if (Math.abs(d[j]-tr) + Math.abs(d[j+1]-tg) + Math.abs(d[j+2]-tb) + Math.abs(d[j+3]-ta) <= tol){ seen[q] = 1; stack.push(q); }
+      }
+    }
+    tctx.putImageData(img, 0, 0);
+  }
+  function pickAt(x, y){
+    const p = tctx.getImageData(Math.floor(mod(x,N)), Math.floor(mod(y,N)), 1, 1).data;
+    st.fg = rgbHex(p[0], p[1], p[2]); syncUI(); saveSoon();
+  }
+  function roll(dx, dy){
+    const c = mk(N); c.getContext('2d').drawImage(tile, 0, 0);
+    tctx.clearRect(0,0,N,N);
+    for (const ox of [0,-N]) for (const oy of [0,-N]) tctx.drawImage(c, mod(dx,N) + ox, mod(dy,N) + oy);
+    changed();
+  }
+  function clearTile(){ tctx.fillStyle = st.bg; tctx.fillRect(0,0,N,N); }
+
+  function drawSample(){
+    setTileCanvas(mk(128));
+    const n = 128;
+    tctx.fillStyle = '#f2ead8'; tctx.fillRect(0,0,n,n);
+    const wrap = (fn) => { for (const ox of [-n,0,n]) for (const oy of [-n,0,n]){ tctx.save(); tctx.translate(ox,oy); fn(); tctx.restore(); } };
+    wrap(() => { tctx.fillStyle = '#d39b2a'; tctx.beginPath(); tctx.arc(0,0,26,0,Math.PI*2); tctx.fill(); });
+    wrap(() => { tctx.strokeStyle = '#2e4a7d'; tctx.lineWidth = 8; tctx.beginPath(); tctx.arc(64,64,22,0,Math.PI*2); tctx.stroke(); });
+    wrap(() => { tctx.fillStyle = '#b23a2e'; for (const [x,y] of [[64,0],[0,64]]){ tctx.beginPath(); tctx.arc(x,y,7,0,Math.PI*2); tctx.fill(); } });
+    wrap(() => { tctx.fillStyle = '#7a9a6b'; for (const [x,y] of [[32,32],[96,96],[32,96],[96,32]]){ tctx.beginPath(); tctx.arc(x,y,4,0,Math.PI*2); tctx.fill(); } });
+  }
+
+  /* ---------- repeat geometry ---------- */
+  function buildSuper(target = superC, g = sctx){
+    const h = N/2;
+    if (st.mode === 'brick'){ target.width = N; target.height = 2*N; g.drawImage(tile,0,0); g.drawImage(tile,-h,N); g.drawImage(tile,h,N); }
+    else if (st.mode === 'halfdrop'){ target.width = 2*N; target.height = N; g.drawImage(tile,0,0); g.drawImage(tile,N,-h); g.drawImage(tile,N,h); }
+    else if (st.mode === 'mirror'){
+      target.width = target.height = 2*N;
+      g.drawImage(tile,0,0);
+      g.save(); g.translate(2*N,0); g.scale(-1,1); g.drawImage(tile,0,0); g.restore();
+      g.save(); g.translate(0,2*N); g.scale(1,-1); g.drawImage(tile,0,0); g.restore();
+      g.save(); g.translate(2*N,2*N); g.scale(-1,-1); g.drawImage(tile,0,0); g.restore();
+    }
+    else { target.width = target.height = N; g.drawImage(tile,0,0); }
+    return target;
+  }
+  function previewMap(u, v){
+    if (st.mode === 'brick'){ const row = Math.floor(v/N); return { x: u - (row & 1 ? N/2 : 0), y: v }; }
+    if (st.mode === 'halfdrop'){ const col = Math.floor(u/N); return { x: u, y: v - (col & 1 ? N/2 : 0) }; }
+    if (st.mode === 'mirror'){
+      const col = Math.floor(u/N), row = Math.floor(v/N);
+      let x = mod(u,N), y = mod(v,N);
+      if (col & 1) x = N - x; if (row & 1) y = N - y;
+      return { x, y };
+    }
+    return { x:u, y:v };
+  }
+  const editorMap = (u, v) => ({ x:u, y:v });
+
+  /* ---------- rendering ---------- */
+  let raf = 0;
+  function requestRender(){ if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+  function render(){ buildSuper(); renderEditor(); renderPreview(); }
+
+  function editorGeom(){ const m = st.neighbors ? N*.25 : 0; return { m, view: N + 2*m }; }
+  function renderEditor(){
+    const W = editor.width; if (!W) return;
+    const dpr = window.devicePixelRatio || 1;
+    const { m, view } = editorGeom(), sc = W / view;
+    ectx.setTransform(1,0,0,1,0,0); ectx.clearRect(0,0,W,W);
+    ectx.imageSmoothingEnabled = sc < 1;
+    const rng = st.neighbors ? [-1,0,1] : [0];
+    for (const dx of rng) for (const dy of rng) ectx.drawImage(tile, (m + dx*N)*sc, (m + dy*N)*sc, N*sc, N*sc);
+    const a = Math.round(m*sc), b = Math.round((m+N)*sc);
+    if (m){
+      ectx.fillStyle = 'rgba(14,22,18,.52)';
+      ectx.fillRect(0,0,W,a); ectx.fillRect(0,b,W,W-b); ectx.fillRect(0,a,a,b-a); ectx.fillRect(b,a,W-b,b-a);
+    }
+    if (sc/dpr >= 9){
+      ectx.beginPath();
+      for (let i = 1; i < N; i++){ const p = Math.round((m+i)*sc) + .5; ectx.moveTo(p,a); ectx.lineTo(p,b); ectx.moveTo(a,p); ectx.lineTo(b,p); }
+      ectx.strokeStyle = 'rgba(0,0,0,.09)'; ectx.lineWidth = 1; ectx.stroke();
+    }
+    if (m){
+      ectx.lineWidth = Math.max(1, dpr);
+      ectx.strokeStyle = 'rgba(255,255,255,.85)';
+      ectx.strokeRect(a + .5, a + .5, b - a - 1, b - a - 1);
+    }
+    if (hover && hover.surface === 'editor' && (st.tool === 'brush' || st.tool === 'eraser') && !hover.alt){
+      const hx = (hover.u + m)*sc, hy = (hover.v + m)*sc, r = Math.max(st.size/2*sc, 2*dpr);
+      ectx.beginPath(); ectx.arc(hx, hy, r, 0, Math.PI*2);
+      ectx.lineWidth = 3*dpr; ectx.strokeStyle = 'rgba(0,0,0,.35)'; ectx.stroke();
+      ectx.lineWidth = dpr; ectx.strokeStyle = 'rgba(255,255,255,.95)'; ectx.stroke();
+    }
+  }
+  function renderPreview(){
+    const W = preview.width, H = preview.height; if (!W || !H) return;
+    const dpr = window.devicePixelRatio || 1, z = st.tilePx / N;
+    pctx.setTransform(1,0,0,1,0,0); pctx.clearRect(0,0,W,H);
+    pctx.imageSmoothingEnabled = z < 1;
+    const pat = pctx.createPattern(superC, 'repeat');
+    pctx.setTransform(dpr*z,0,0,dpr*z,0,0);
+    pctx.fillStyle = pat; pctx.fillRect(0,0,W/(dpr*z) + 1, H/(dpr*z) + 1);
+    if (st.seams) drawSeams(W/dpr, H/dpr, dpr);
+  }
+  function drawSeams(Wc, Hc, dpr){
+    const T = st.tilePx, P = (x) => Math.round(x) + .5;
+    pctx.setTransform(dpr,0,0,dpr,0,0);
+    pctx.beginPath();
+    const line = (x0,y0,x1,y1) => { pctx.moveTo(x0,y0); pctx.lineTo(x1,y1); };
+    if (st.mode === 'brick'){
+      for (let y = 0; y <= Hc; y += T) line(0,P(y),Wc,P(y));
+      for (let r = 0; r*T < Hc; r++){ const off = r & 1 ? T/2 : 0; for (let x = off - T; x <= Wc; x += T) line(P(x), r*T, P(x), (r+1)*T); }
+    } else if (st.mode === 'halfdrop'){
+      for (let x = 0; x <= Wc; x += T) line(P(x),0,P(x),Hc);
+      for (let c = 0; c*T < Wc; c++){ const off = c & 1 ? T/2 : 0; for (let y = off - T; y <= Hc; y += T) line(c*T, P(y), (c+1)*T, P(y)); }
+    } else {
+      for (let x = 0; x <= Wc; x += T) line(P(x),0,P(x),Hc);
+      for (let y = 0; y <= Hc; y += T) line(0,P(y),Wc,P(y));
+    }
+    pctx.setLineDash([]); pctx.lineWidth = 2; pctx.strokeStyle = 'rgba(0,0,0,.3)'; pctx.stroke();
+    pctx.setLineDash([4,4]); pctx.lineWidth = 1; pctx.strokeStyle = 'rgba(255,255,255,.9)'; pctx.stroke();
+    pctx.setLineDash([]);
+  }
+
+  /* ---------- persistence ---------- */
+  let saveT = 0;
+  function saveSoon(){ clearTimeout(saveT); saveT = setTimeout(() => { store.set('rs.settings', JSON.stringify(st)); try { store.set('rs.tile', tile.toDataURL('image/png')); } catch(e){} }, 400); }
+  function changed(){ requestRender(); saveSoon(); }
+
+  /* ---------- pointer input ---------- */
+  function pointFor(surface, e){
+    const el = surface === 'editor' ? editor : preview, r = el.getBoundingClientRect();
+    if (surface === 'editor'){ const { m, view } = editorGeom(); return { u:(e.clientX - r.left)/r.width*view - m, v:(e.clientY - r.top)/r.height*view - m }; }
+    const z = st.tilePx / N; return { u:(e.clientX - r.left)/z, v:(e.clientY - r.top)/z };
+  }
+  let drawing = null;
+  function bind(surface){
+    const el = surface === 'editor' ? editor : preview;
+    const map = surface === 'editor' ? editorMap : previewMap;
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      const p = pointFor(surface, e), t = map(p.u, p.v);
+      const tool = e.altKey ? 'pick' : st.tool;
+      if (tool === 'pick'){ pickAt(t.x, t.y); return; }
+      if (tool === 'fill'){ pushUndo(); floodFill(t.x, t.y, st.fg); changed(); return; }
+      pushUndo();
+      drawing = { surface, last:p, color: tool === 'eraser' ? st.bg : st.fg, map };
+      stampAt(t.x, t.y, drawing.color);
+      requestRender();
+    });
+    el.addEventListener('pointermove', (e) => {
+      const p = pointFor(surface, e);
+      hover = { surface, u:p.u, v:p.v, alt:e.altKey };
+      if (drawing && drawing.surface === surface){
+        const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+        for (const ev of (evs.length ? evs : [e])){ const q = pointFor(surface, ev); strokeSeg(drawing.last, q, map, drawing.color); drawing.last = q; }
+      }
+      requestRender();
+    });
+    const end = () => { if (drawing){ drawing = null; changed(); } };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('pointerleave', () => { if (!drawing){ hover = null; requestRender(); } });
+  }
+  bind('editor'); bind('preview');
+
+  preview.addEventListener('wheel', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    st.tilePx = clamp(Math.round(st.tilePx * Math.exp(-e.deltaY * .01)), 16, 512);
+    syncUI(); requestRender(); saveSoon();
+  }, { passive:false });
+
+  /* ---------- controls ---------- */
+  const sw = $('#swatches');
+  for (const [hex, name] of PALETTE){
+    const b = document.createElement('button');
+    b.className = 'sw'; b.style.background = hex; b.title = name + ' (Shift-click for background)'; b.setAttribute('aria-label', name);
+    b.addEventListener('click', (e) => { if (e.shiftKey) st.bg = hex; else st.fg = hex; syncUI(); saveSoon(); });
+    sw.appendChild(b);
+  }
+  function syncUI(){
+    $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === st.tool)));
+    $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === st.mode)));
+    $('#size').value = st.size; $('#sizeVal').textContent = st.size + ' px';
+    $('#zoom').value = st.tilePx; $('#zoomVal').textContent = st.tilePx + ' px';
+    $('#fg').value = st.fg; $('#bg').value = st.bg;
+    $('#crisp').checked = st.crisp; $('#neighbors').checked = st.neighbors; $('#seams').checked = st.seams;
+    $('#res').value = String(N);
+    editor.style.cursor = st.tool === 'pick' || st.tool === 'fill' ? 'cell' : 'crosshair';
+  }
+  $$('[data-tool]').forEach(b => b.addEventListener('click', () => { st.tool = b.dataset.tool; syncUI(); saveSoon(); }));
+  $$('[data-mode]').forEach(b => b.addEventListener('click', () => { st.mode = b.dataset.mode; syncUI(); changed(); }));
+  $('#size').addEventListener('input', (e) => { st.size = +e.target.value; syncUI(); requestRender(); saveSoon(); });
+  $('#zoom').addEventListener('input', (e) => { st.tilePx = +e.target.value; syncUI(); requestRender(); saveSoon(); });
+  $('#fg').addEventListener('input', (e) => { st.fg = e.target.value; saveSoon(); });
+  $('#bg').addEventListener('input', (e) => { st.bg = e.target.value; saveSoon(); });
+  $('#swap').addEventListener('click', () => { [st.fg, st.bg] = [st.bg, st.fg]; syncUI(); saveSoon(); });
+  $('#crisp').addEventListener('change', (e) => { st.crisp = e.target.checked; saveSoon(); });
+  $('#neighbors').addEventListener('change', (e) => { st.neighbors = e.target.checked; changed(); });
+  $('#seams').addEventListener('change', (e) => { st.seams = e.target.checked; changed(); });
+  $('#res').addEventListener('change', (e) => {
+    const n = +e.target.value; if (n === N) return;
+    pushUndo();
+    const c = mk(n), g = c.getContext('2d');
+    g.imageSmoothingEnabled = n < N; g.imageSmoothingQuality = 'high';
+    g.drawImage(tile, 0, 0, n, n);
+    setTileCanvas(c); changed();
+  });
+  $('#shift').addEventListener('click', () => { pushUndo(); roll(N/2, N/2); });
+  $('#clear').addEventListener('click', () => { pushUndo(); clearTile(); changed(); });
+  $('#undo').addEventListener('click', undo);
+  $('#redo').addEventListener('click', redo);
+  $('#importBtn').addEventListener('click', () => $('#file').click());
+  $('#file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) importImage(f); e.target.value = ''; });
+  document.addEventListener('paste', (e) => {
+    const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+    if (item){ e.preventDefault(); importImage(item.getAsFile()); }
+  });
+  function importImage(file){
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      pushUndo(); clearTile();
+      const s = Math.max(N/img.width, N/img.height), w = img.width*s, h = img.height*s;
+      tctx.imageSmoothingEnabled = true; tctx.imageSmoothingQuality = 'high';
+      tctx.drawImage(img, (N-w)/2, (N-h)/2, w, h);
+      URL.revokeObjectURL(url); changed();
+    };
+    img.src = url;
+  }
+
+  /* ---------- export ---------- */
+  let exTileC = null, exRepC = null;
+  function buildExports(){
+    const k = +$('#exScale').value;
+    exTileC = mk(N*k); const g = exTileC.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(tile, 0, 0, N*k, N*k);
+    const sc = mk(1); buildSuper(sc, sc.getContext('2d'));
+    exRepC = mk(3*N*k); const r = exRepC.getContext('2d'); r.imageSmoothingEnabled = false;
+    const pat = r.createPattern(sc, 'repeat'); r.setTransform(k,0,0,k,0,0); r.fillStyle = pat; r.fillRect(0,0,3*N,3*N);
+    $('#exTile').src = exTileC.toDataURL('image/png'); $('#exRepeat').src = exRepC.toDataURL('image/png');
+    $('#exTileDim').textContent = `${N*k} × ${N*k}`; $('#exRepDim').textContent = `${3*N*k} × ${3*N*k}`;
+    $('#copyStatus').textContent = '';
+  }
+  const modal = $('#exportModal');
+  $('#exportBtn').addEventListener('click', () => { buildExports(); modal.hidden = false; $('#exClose').focus(); });
+  $('#exClose').addEventListener('click', () => { modal.hidden = true; $('#exportBtn').focus(); });
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.hidden = true; });
+  $('#exScale').addEventListener('change', buildExports);
+  $$('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+    const c = b.dataset.copy === 'tile' ? exTileC : exRepC, out = $('#copyStatus');
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('unsupported');
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Promise(res => c.toBlob(res, 'image/png')) })]);
+      out.textContent = 'Copied to the clipboard.';
+    } catch(e){ out.textContent = 'This view blocks copying images. Right-click or long-press the image to save it instead.'; }
+  }));
+
+  /* ---------- keyboard ---------- */
+  document.addEventListener('keydown', (e) => {
+    if (!modal.hidden){ if (e.key === 'Escape'){ modal.hidden = true; } return; }
+    if (e.target.closest('input, select, textarea')) return;
+    const k = e.key.toLowerCase(), mod1 = e.ctrlKey || e.metaKey;
+    if (mod1 && k === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod1 && k === 'y'){ e.preventDefault(); redo(); return; }
+    if (mod1) return;
+    const tools = { b:'brush', e:'eraser', f:'fill', i:'pick' };
+    if (tools[k]){ st.tool = tools[k]; syncUI(); saveSoon(); return; }
+    if (k === '[' || k === ']'){ const step = st.size >= 12 ? 2 : 1; st.size = clamp(st.size + (k === ']' ? step : -step), 1, 64); syncUI(); requestRender(); saveSoon(); return; }
+    if (k === 'x'){ [st.fg, st.bg] = [st.bg, st.fg]; syncUI(); saveSoon(); return; }
+    const arrows = { arrowleft:[-1,0], arrowright:[1,0], arrowup:[0,-1], arrowdown:[0,1] };
+    if (arrows[k]){ e.preventDefault(); pushUndo(); roll(...arrows[k]); }
+  });
+  document.addEventListener('keyup', (e) => { if (e.key === 'Alt' && hover){ hover.alt = false; requestRender(); } });
+
+  /* ---------- sizing ---------- */
+  const pwrap = preview.parentElement;
+  function resize(){
+    const dpr = window.devicePixelRatio || 1;
+    const ew = Math.max(1, Math.round(editor.clientWidth * dpr));
+    if (editor.width !== ew){ editor.width = ew; editor.height = ew; }
+    const r = pwrap.getBoundingClientRect();
+    const pw = Math.max(1, Math.round(r.width * dpr)), ph = Math.max(1, Math.round(r.height * dpr));
+    if (preview.width !== pw || preview.height !== ph){ preview.width = pw; preview.height = ph; }
+    requestRender();
+  }
+  new ResizeObserver(resize).observe(editor);
+  new ResizeObserver(resize).observe(pwrap);
+
+  /* ---------- start ---------- */
+  const saved = store.get('rs.tile');
+  if (saved){
+    drawSample();
+    const img = new Image();
+    img.onload = () => { if (img.width >= 8 && img.width === img.height){ setTileCanvas(mk(img.width)); tctx.drawImage(img,0,0); syncUI(); requestRender(); } };
+    img.src = saved;
+  } else drawSample();
+  syncUI(); syncUndo(); resize();
+})();
+</script>
+
+</body>
+</html>

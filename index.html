@@ -75,6 +75,7 @@ input[type=range]{accent-color:var(--accent);flex:1;min-width:100px}
 input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer}
 .swatches{display:flex;flex-wrap:wrap;gap:5px}
 .sw{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0}
+.row[hidden]{display:none}
 select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--fg)}
 .check{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
 .check input{accent-color:var(--accent);width:15px;height:15px;margin:0}
@@ -142,7 +143,11 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
         <span class="color"><input type="color" id="bg" aria-label="Background color" title="Background color, used by Erase and Clear"></span>
         <div class="swatches" id="swatches" aria-label="Palette"></div>
       </div>
-      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background.</p>
+      <div class="row" id="customRow" hidden>
+        <span class="label">Yours</span>
+        <div class="swatches" id="custom" aria-label="Your colors"></div>
+      </div>
+      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background. Colors you choose with the pickers are kept under Yours; right-click or long-press one to remove it.</p>
 
       <div class="divider"></div>
 
@@ -507,13 +512,38 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   }, { passive:false });
 
   /* ---------- controls ---------- */
-  const sw = $('#swatches');
-  for (const [hex, name] of PALETTE){
+  function swatch(hex, name){
     const b = document.createElement('button');
     b.className = 'sw'; b.style.background = hex; b.title = name + ' (Shift-click for background)'; b.setAttribute('aria-label', name);
     b.addEventListener('click', (e) => { if (e.shiftKey) st.bg = hex; else st.fg = hex; syncUI(); saveSoon(); });
-    sw.appendChild(b);
+    return b;
   }
+  const sw = $('#swatches');
+  for (const [hex, name] of PALETTE) sw.appendChild(swatch(hex, name));
+
+  // Colors chosen with the pickers, newest first, kept between sessions.
+  const MAX_CUSTOM = 16;
+  let custom = [];
+  try { custom = JSON.parse(store.get('rs.custom') || '[]'); } catch(e){}
+  custom = (Array.isArray(custom) ? custom : []).filter(h => typeof h === 'string' && /^#[0-9a-f]{6}$/.test(h)).slice(0, MAX_CUSTOM);
+  function renderCustom(){
+    const box = $('#custom'); box.textContent = '';
+    for (const hex of custom){
+      const b = swatch(hex, hex);
+      b.title = hex + ' (Shift-click for background, right-click to remove)';
+      b.addEventListener('contextmenu', (e) => { e.preventDefault(); custom = custom.filter(h => h !== hex); saveCustom(); });
+      box.appendChild(b);
+    }
+    $('#customRow').hidden = !custom.length;
+  }
+  function saveCustom(){ store.set('rs.custom', JSON.stringify(custom)); renderCustom(); }
+  function addCustom(hex){
+    hex = String(hex).toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(hex) || PALETTE.some(([h]) => h === hex)) return;
+    custom = [hex, ...custom.filter(h => h !== hex)].slice(0, MAX_CUSTOM);
+    saveCustom();
+  }
+  renderCustom();
   function syncUI(){
     $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === st.tool)));
     $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === st.mode)));
@@ -530,6 +560,9 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   $('#zoom').addEventListener('input', (e) => { st.tilePx = +e.target.value; syncUI(); requestRender(); saveSoon(); });
   $('#fg').addEventListener('input', (e) => { st.fg = e.target.value; saveSoon(); });
   $('#bg').addEventListener('input', (e) => { st.bg = e.target.value; saveSoon(); });
+  // 'change' fires once the picker commits, so dragging through the picker adds one swatch, not dozens.
+  $('#fg').addEventListener('change', (e) => addCustom(e.target.value));
+  $('#bg').addEventListener('change', (e) => addCustom(e.target.value));
   $('#swap').addEventListener('click', () => { [st.fg, st.bg] = [st.bg, st.fg]; syncUI(); saveSoon(); });
   $('#crisp').addEventListener('change', (e) => { st.crisp = e.target.checked; saveSoon(); });
   $('#neighbors').addEventListener('change', (e) => { st.neighbors = e.target.checked; changed(); });

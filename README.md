@@ -12,7 +12,7 @@ Most tiling tools have you upload an image, look at the result, then go back to 
 - **Seam checking:** "Offset ½" moves the tile by half its width and height so the edges land in the middle. The arrow keys move it by 1 px.
 - **Tools:** brush, eraser, fill (the fill also wraps across edges), colour picker, and a hard-pixel mode for pixel art. The tile can be 16 to 512 px square.
 - **Import and export:** load or paste an image to start from. Export shows the tile and a 3×3 repeat at 1× to 8× scale.
-- Undo and redo, and your tile and settings are saved in your browser.
+- Undo and redo, and your tile, settings and custom colours are saved in your browser.
 
 ## Running it
 

@@ -270,12 +270,23 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       if (x1 > x0) tctx.fillRect(x0, py, x1 - x0, 1);
     }
   }
+  // Where a stamp centred at (x, y) shows up in the tile once it spills over an edge.
+  // The spill lands in a neighbor, and where that is depends on the repeat.
+  function wrapCenters(x, y){
+    const h = N/2, out = [];
+    if (st.mode === 'mirror'){ for (const cx of [x, -x, 2*N - x]) for (const cy of [y, -y, 2*N - y]) out.push([cx, cy]); return out; }
+    for (const i of [-1,0,1]) for (const j of [-1,0,1]){
+      if (st.mode === 'brick') out.push([x + i*N + (j ? h : 0), y + j*N]);
+      else if (st.mode === 'halfdrop') out.push([x + i*N, y + j*N + (i ? h : 0)]);
+      else out.push([x + i*N, y + j*N]);
+    }
+    return out;
+  }
   function stampAt(x, y, color){
     x = mod(x, N); y = mod(y, N);
     const s = st.size, r = s/2 + 1;
     tctx.fillStyle = color;
-    for (const ox of [-N,0,N]) for (const oy of [-N,0,N]){
-      const cx = x + ox, cy = y + oy;
+    for (const [cx, cy] of wrapCenters(x, y)){
       if (cx + r < 0 || cx - r > N || cy + r < 0 || cy - r > N) continue;
       if (st.crisp) crispDot(cx, cy, s);
       else { tctx.beginPath(); tctx.arc(cx, cy, Math.max(s/2, .5), 0, Math.PI*2); tctx.fill(); }
@@ -299,15 +310,23 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     const [r,g,b] = hexRgb(hex);
     const i0 = (y*N + x)*4, tr = d[i0], tg = d[i0+1], tb = d[i0+2], ta = d[i0+3];
     if (tr === r && tg === g && tb === b && ta === 255) return;
+    // Pixel across an edge, following the repeat; -1 where the edge is a mirror line.
+    const h = N/2, mir = st.mode === 'mirror', brick = st.mode === 'brick', hd = st.mode === 'halfdrop';
+    const at = (qx, qy) => {
+      let sx = 0, sy = 0;
+      if (qx < 0 || qx >= N){ if (mir) return -1; if (hd) sy = h; }
+      if (qy < 0 || qy >= N){ if (mir) return -1; if (brick) sx = h; }
+      return mod(qy + sy, N)*N + mod(qx + sx, N);
+    };
     const tol = 60, seen = new Uint8Array(N*N), stack = [y*N + x];
     seen[y*N + x] = 1;
     while (stack.length){
       const p = stack.pop(), i = p*4;
       d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = 255;
       const px = p % N, py = (p / N) | 0;
-      const nb = [py*N + (px+1)%N, py*N + (px-1+N)%N, ((py+1)%N)*N + px, ((py-1+N)%N)*N + px];
+      const nb = [at(px+1,py), at(px-1,py), at(px,py+1), at(px,py-1)];
       for (const q of nb){
-        if (seen[q]) continue;
+        if (q < 0 || seen[q]) continue;
         const j = q*4;
         if (Math.abs(d[j]-tr) + Math.abs(d[j+1]-tg) + Math.abs(d[j+2]-tb) + Math.abs(d[j+3]-ta) <= tol){ seen[q] = 1; stack.push(q); }
       }

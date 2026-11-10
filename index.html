@@ -76,6 +76,7 @@ input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);
 .swatches{display:flex;flex-wrap:wrap;gap:5px}
 .sw{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0}
 .row[hidden]{display:none}
+#alphaVal{min-width:4ch;text-align:right}
 select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--fg)}
 .check{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
 .check input{accent-color:var(--accent);width:15px;height:15px;margin:0}
@@ -143,11 +144,16 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
         <span class="color"><input type="color" id="bg" aria-label="Background color" title="Background color, used by Erase and Clear"></span>
         <div class="swatches" id="swatches" aria-label="Palette"></div>
       </div>
+      <div class="row">
+        <span class="label">Opacity</span>
+        <input type="range" id="alpha" min="1" max="100" step="1" aria-label="Brush opacity" title="Brush opacity, used by Brush and Fill">
+        <span class="mono" id="alphaVal">100%</span>
+      </div>
       <div class="row" id="customRow" hidden>
         <span class="label">Yours</span>
         <div class="swatches" id="custom" aria-label="Your colors"></div>
       </div>
-      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background. Colors you choose with the pickers are kept under Yours; right-click or long-press one to remove it.</p>
+      <p class="hint" style="margin:-4px 0 0">Click a swatch for the brush, Shift-click for the background. Opacity applies to the brush color. Colors you choose with the pickers, along with their opacity, are kept under Yours; right-click or long-press one to remove it.</p>
 
       <div class="divider"></div>
 
@@ -236,9 +242,10 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     ['#b23a2e','Madder red'],['#e7a1a8','Rose'],['#f2ead8','Cream'],['#ffffff','White'],['#2b2b2b','Charcoal']
   ];
 
-  const st = { tool:'brush', size:6, fg:'#2e4a7d', bg:'#f2ead8', mode:'grid', tilePx:128, seams:false, neighbors:true, crisp:false };
+  const st = { tool:'brush', size:6, fg:'#2e4a7d', fgA:1, bg:'#f2ead8', mode:'grid', tilePx:128, seams:false, neighbors:true, crisp:false };
   try { Object.assign(st, JSON.parse(store.get('rs.settings') || '{}')); } catch(e){}
   st.size = clamp(+st.size || 6, 1, 64);
+  st.fgA = clamp(+st.fgA || 1, .01, 1);
   st.tilePx = clamp(+st.tilePx || 128, 16, 512);
   if (!['grid','brick','halfdrop','mirror'].includes(st.mode)) st.mode = 'grid';
   if (!['brush','eraser','fill','pick'].includes(st.tool)) st.tool = 'brush';
@@ -262,8 +269,22 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   function syncUndo(){ $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length; }
 
   /* ---------- painting ---------- */
-  function crispDot(x, y, s){
-    if (s <= 1){ tctx.fillRect(Math.floor(x), Math.floor(y), 1, 1); return; }
+  // A translucent stroke is painted opaque on its own layer and laid over the tile as a whole,
+  // so overlapping stamps within one stroke don't build up.
+  let stroke = null;
+  function beginStroke(alpha){
+    if (alpha >= 1){ stroke = null; return; }
+    const base = mk(N), layer = mk(N);
+    base.getContext('2d').drawImage(tile, 0, 0);
+    stroke = { base, layer, ctx: layer.getContext('2d'), alpha };
+  }
+  function composeStroke(){
+    if (!stroke || stroke.base.width !== N) return;
+    tctx.clearRect(0,0,N,N); tctx.drawImage(stroke.base, 0, 0);
+    tctx.globalAlpha = stroke.alpha; tctx.drawImage(stroke.layer, 0, 0); tctx.globalAlpha = 1;
+  }
+  function crispDot(g, x, y, s){
+    if (s <= 1){ g.fillRect(Math.floor(x), Math.floor(y), 1, 1); return; }
     const odd = s % 2 === 1;
     const cx = odd ? Math.floor(x) + .5 : Math.round(x);
     const cy = odd ? Math.floor(y) + .5 : Math.round(y);
@@ -272,7 +293,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       const py = top + j, dy = py + .5 - cy;
       const h = Math.sqrt(Math.max(0, r*r - dy*dy));
       const x0 = Math.round(cx - h), x1 = Math.round(cx + h);
-      if (x1 > x0) tctx.fillRect(x0, py, x1 - x0, 1);
+      if (x1 > x0) g.fillRect(x0, py, x1 - x0, 1);
     }
   }
   // Where a stamp centred at (x, y) shows up in the tile once it spills over an edge.
@@ -289,12 +310,12 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   }
   function stampAt(x, y, color){
     x = mod(x, N); y = mod(y, N);
-    const s = st.size, r = s/2 + 1;
-    tctx.fillStyle = color;
+    const s = st.size, r = s/2 + 1, g = stroke ? stroke.ctx : tctx;
+    g.fillStyle = color;
     for (const [cx, cy] of wrapCenters(x, y)){
       if (cx + r < 0 || cx - r > N || cy + r < 0 || cy - r > N) continue;
-      if (st.crisp) crispDot(cx, cy, s);
-      else { tctx.beginPath(); tctx.arc(cx, cy, Math.max(s/2, .5), 0, Math.PI*2); tctx.fill(); }
+      if (st.crisp) crispDot(g, cx, cy, s);
+      else { g.beginPath(); g.arc(cx, cy, Math.max(s/2, .5), 0, Math.PI*2); g.fill(); }
     }
   }
   function strokeSeg(a, b, map, color){
@@ -305,16 +326,23 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       const t = i / n, p = map(a.u + (b.u - a.u)*t, a.v + (b.v - a.v)*t);
       stampAt(p.x, p.y, color);
     }
+    composeStroke();
   }
   const hexRgb = (h) => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
   const rgbHex = (r,g,b) => '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+  // A color key is '#rrggbb', or '#rrggbbaa' when translucent.
+  const keyOf = (hex, a) => a >= 1 ? hex : hex + Math.round(clamp(a, 0, 1)*255).toString(16).padStart(2,'0');
+  const keyHex = (k) => k.slice(0, 7);
+  const keyAlpha = (k) => k.length === 9 ? parseInt(k.slice(7), 16)/255 : 1;
+  const pct = (a) => Math.max(1, Math.round(a*100));
 
-  function floodFill(x, y, hex){
+  function floodFill(x, y, hex, a = 1){
     x = Math.floor(mod(x, N)); y = Math.floor(mod(y, N));
     const img = tctx.getImageData(0,0,N,N), d = img.data;
     const [r,g,b] = hexRgb(hex);
     const i0 = (y*N + x)*4, tr = d[i0], tg = d[i0+1], tb = d[i0+2], ta = d[i0+3];
     if (tr === r && tg === g && tb === b && ta === 255) return;
+    const ia = 1 - a;
     // Pixel across an edge, following the repeat; -1 where the edge is a mirror line.
     const h = N/2, mir = st.mode === 'mirror', brick = st.mode === 'brick', hd = st.mode === 'halfdrop';
     const at = (qx, qy) => {
@@ -327,7 +355,8 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     seen[y*N + x] = 1;
     while (stack.length){
       const p = stack.pop(), i = p*4;
-      d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = 255;
+      if (a >= 1){ d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = 255; }
+      else { d[i] = Math.round(r*a + d[i]*ia); d[i+1] = Math.round(g*a + d[i+1]*ia); d[i+2] = Math.round(b*a + d[i+2]*ia); d[i+3] = Math.round(255*a + d[i+3]*ia); }
       const px = p % N, py = (p / N) | 0;
       const nb = [at(px+1,py), at(px-1,py), at(px,py+1), at(px,py-1)];
       for (const q of nb){
@@ -340,7 +369,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   }
   function pickAt(x, y){
     const p = tctx.getImageData(Math.floor(mod(x,N)), Math.floor(mod(y,N)), 1, 1).data;
-    st.fg = rgbHex(p[0], p[1], p[2]); syncUI(); saveSoon();
+    st.fg = rgbHex(p[0], p[1], p[2]); st.fgA = 1; syncUI(); saveSoon();
   }
   function roll(dx, dy){
     const c = mk(N); c.getContext('2d').drawImage(tile, 0, 0);
@@ -482,10 +511,11 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       const p = pointFor(surface, e), t = map(p.u, p.v);
       const tool = e.altKey ? 'pick' : st.tool;
       if (tool === 'pick'){ pickAt(t.x, t.y); return; }
-      if (tool === 'fill'){ pushUndo(); floodFill(t.x, t.y, st.fg); changed(); return; }
+      if (tool === 'fill'){ pushUndo(); floodFill(t.x, t.y, st.fg, st.fgA); changed(); return; }
       pushUndo();
       drawing = { surface, last:p, color: tool === 'eraser' ? st.bg : st.fg, map };
-      stampAt(t.x, t.y, drawing.color);
+      beginStroke(tool === 'eraser' ? 1 : st.fgA);
+      stampAt(t.x, t.y, drawing.color); composeStroke();
       requestRender();
     });
     el.addEventListener('pointermove', (e) => {
@@ -497,7 +527,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
       }
       requestRender();
     });
-    const end = () => { if (drawing){ drawing = null; changed(); } };
+    const end = () => { if (drawing){ drawing = null; stroke = null; changed(); } };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
     el.addEventListener('pointerleave', () => { if (!drawing){ hover = null; requestRender(); } });
@@ -512,10 +542,13 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   }, { passive:false });
 
   /* ---------- controls ---------- */
-  function swatch(hex, name){
+  function swatch(key, name){
+    const hex = keyHex(key), a = keyAlpha(key);
     const b = document.createElement('button');
-    b.className = 'sw'; b.style.background = hex; b.title = name + ' (Shift-click for background)'; b.setAttribute('aria-label', name);
-    b.addEventListener('click', (e) => { if (e.shiftKey) st.bg = hex; else st.fg = hex; syncUI(); saveSoon(); });
+    b.className = 'sw'; b.title = name + ' (Shift-click for background)'; b.setAttribute('aria-label', name);
+    // Translucent colors sit on a checkerboard so their opacity shows.
+    b.style.background = a >= 1 ? hex : `linear-gradient(${key},${key}), repeating-conic-gradient(#b9b9b9 0% 25%, #fff 0% 50%) 0 0/10px 10px`;
+    b.addEventListener('click', (e) => { if (e.shiftKey) st.bg = hex; else { st.fg = hex; st.fgA = a; } syncUI(); saveSoon(); });
     return b;
   }
   const sw = $('#swatches');
@@ -525,21 +558,24 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   const MAX_CUSTOM = 16;
   let custom = [];
   try { custom = JSON.parse(store.get('rs.custom') || '[]'); } catch(e){}
-  custom = (Array.isArray(custom) ? custom : []).filter(h => typeof h === 'string' && /^#[0-9a-f]{6}$/.test(h)).slice(0, MAX_CUSTOM);
+  custom = (Array.isArray(custom) ? custom : []).filter(h => typeof h === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/.test(h)).slice(0, MAX_CUSTOM);
   function renderCustom(){
     const box = $('#custom'); box.textContent = '';
     for (const hex of custom){
-      const b = swatch(hex, hex);
-      b.title = hex + ' (Shift-click for background, right-click to remove)';
+      const label = keyAlpha(hex) < 1 ? `${keyHex(hex)} at ${pct(keyAlpha(hex))}%` : hex;
+      const b = swatch(hex, label);
+      b.title = label + ' (Shift-click for background, right-click to remove)';
       b.addEventListener('contextmenu', (e) => { e.preventDefault(); custom = custom.filter(h => h !== hex); saveCustom(); });
       box.appendChild(b);
     }
     $('#customRow').hidden = !custom.length;
   }
   function saveCustom(){ store.set('rs.custom', JSON.stringify(custom)); renderCustom(); }
-  function addCustom(hex){
+  function addCustom(hex, a = 1){
     hex = String(hex).toLowerCase();
-    if (!/^#[0-9a-f]{6}$/.test(hex) || PALETTE.some(([h]) => h === hex)) return;
+    if (!/^#[0-9a-f]{6}$/.test(hex)) return;
+    hex = keyOf(hex, a);
+    if (PALETTE.some(([h]) => h === hex)) return;
     custom = [hex, ...custom.filter(h => h !== hex)].slice(0, MAX_CUSTOM);
     saveCustom();
   }
@@ -550,6 +586,7 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
     $('#size').value = st.size; $('#sizeVal').textContent = st.size + ' px';
     $('#zoom').value = st.tilePx; $('#zoomVal').textContent = st.tilePx + ' px';
     $('#fg').value = st.fg; $('#bg').value = st.bg;
+    $('#alpha').value = pct(st.fgA); $('#alphaVal').textContent = pct(st.fgA) + '%';
     $('#crisp').checked = st.crisp; $('#neighbors').checked = st.neighbors; $('#seams').checked = st.seams;
     $('#res').value = String(N);
     editor.style.cursor = st.tool === 'pick' || st.tool === 'fill' ? 'cell' : 'crosshair';
@@ -561,7 +598,9 @@ select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);
   $('#fg').addEventListener('input', (e) => { st.fg = e.target.value; saveSoon(); });
   $('#bg').addEventListener('input', (e) => { st.bg = e.target.value; saveSoon(); });
   // 'change' fires once the picker commits, so dragging through the picker adds one swatch, not dozens.
-  $('#fg').addEventListener('change', (e) => addCustom(e.target.value));
+  $('#fg').addEventListener('change', (e) => addCustom(e.target.value, st.fgA));
+  $('#alpha').addEventListener('input', (e) => { st.fgA = clamp(+e.target.value/100, .01, 1); syncUI(); saveSoon(); });
+  $('#alpha').addEventListener('change', () => { if (st.fgA < 1) addCustom(st.fg, st.fgA); });
   $('#bg').addEventListener('change', (e) => addCustom(e.target.value));
   $('#swap').addEventListener('click', () => { [st.fg, st.bg] = [st.bg, st.fg]; syncUI(); saveSoon(); });
   $('#crisp').addEventListener('change', (e) => { st.crisp = e.target.checked; saveSoon(); });
